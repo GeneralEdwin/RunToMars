@@ -1,0 +1,8 @@
+wrangler.jsonc
+worker.js
+README.md
+schema.sql
+.assetsignore
+node_modules
+.git
+.github

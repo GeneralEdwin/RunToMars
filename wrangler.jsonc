@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "run-to-mars",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-22",
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "run-to-mars",
+      "database_id": "6b882564-8d36-4b04-9b52-3cfd4e5a1005"
+    }
+  ]
+}
