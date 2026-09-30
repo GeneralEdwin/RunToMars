@@ -265,7 +265,8 @@ h3.title{font-family:var(--display);font-weight:800;font-size:clamp(34px,5vw,54p
 /* Run to Mars on Cloudflare: leaderboard + player identity via the Worker API (/api/...) and D1.
    Provides the same small interface the game used on claude.ai (db + user). */
 (function(){
- const API='/api';
+ // on GitHub Pages the game talks to the Cloudflare Worker; on the Worker's own address it uses /api
+ const API=/\.github\.io$/.test(location.hostname)?'https://run-to-mars.dogelonmars69420.workers.dev/api':'/api';
  function ident(){try{let id=localStorage.getItem('rtm-pid'),sec=localStorage.getItem('rtm-secret');
   if(!id||!/^[a-f0-9]{32}$/.test(id)||!sec){id=crypto.randomUUID().replace(/-/g,'');sec=crypto.randomUUID()+crypto.randomUUID();localStorage.setItem('rtm-pid',id);localStorage.setItem('rtm-secret',sec);}
   return{id,sec};}catch(e){return{id:crypto.randomUUID().replace(/-/g,''),sec:crypto.randomUUID()+crypto.randomUUID()};}}
@@ -1350,7 +1351,7 @@ async function loadDogelon(){
  if(!THREE.GLTFLoader){dogelonErr='loader missing';return;}
  try{
   // the model is stored in two parts (GitHub/Cloudflare upload size limits); join them back together
-  const parts=await Promise.all(['/dogelon-model.part1.txt','/dogelon-model.part2.txt'].map(u=>fetch(u).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})));
+  const parts=await Promise.all(['dogelon-model.part1.txt','dogelon-model.part2.txt'].map(u=>fetch(u).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})));
   const j=JSON.parse(parts.join(''));
   // unpack the embedded buffer and rebuild a binary glTF in memory (no data:/blob: fetches needed)
   const uri=j.buffers[0].uri,b64=uri.slice(uri.indexOf(',')+1),raw=atob(b64),n=raw.length;
