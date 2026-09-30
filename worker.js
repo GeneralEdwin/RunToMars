@@ -12,6 +12,16 @@ const ID_RE = /^[a-f0-9]{32}$/;
 const NAME_RE = /^[A-Za-z0-9 _.\-]{2,16}$/;
 const LEVELS = 30;
 
+// the game can also run on GitHub Pages (generaledwin.github.io), so the API allows that site to call it
+const ALLOWED_ORIGINS = ["https://generaledwin.github.io"];
+const corsHeaders = (request) => {
+  const o = request.headers.get("origin") || "";
+  return ALLOWED_ORIGINS.includes(o)
+    ? { "access-control-allow-origin": o, "access-control-allow-methods": "GET, PUT, OPTIONS",
+        "access-control-allow-headers": "content-type, x-player-secret, x-owner-key", "access-control-max-age": "86400", vary: "origin" }
+    : {};
+};
+
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
@@ -91,8 +101,13 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/api/")) {
-      try { return await api(request, env, url); }
-      catch (e) { return json({ error: "server error" }, 500); }
+      const ch = corsHeaders(request);
+      if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: ch });
+      let res;
+      try { res = await api(request, env, url); }
+      catch (e) { res = json({ error: "server error" }, 500); }
+      for (const [k, v] of Object.entries(ch)) res.headers.set(k, v);
+      return res;
     }
     if (env.ASSETS) return env.ASSETS.fetch(request);
     // game files live on the Pages upload; this Worker passes them through so game + API share one address
