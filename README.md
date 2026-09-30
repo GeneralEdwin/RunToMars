@@ -9,3 +9,5 @@ Dogelon Mars endless tunnel runner, running on Cloudflare Workers with a D1 lead
 - `schema.sql` – leaderboard table
 
 Every push to `main` deploys automatically via Cloudflare Workers Builds.
+
+Play: https://run-to-mars.dogelonmars69420.workers.dev
