@@ -390,6 +390,8 @@ equip.back=null;if(equip.head==='cap'||equip.head==='armycap')equip.head=null;
 
 let CH=CHARS[0];
 let bank=store.get('spark-bank',0),bestInf=store.get('spark-best',0);
+let bestRun=Math.max(store.get('run-best-any',0),bestInf); // longest single run in any mode (tunnels or Infinite)
+function noteRun(d){d=Math.floor(d)||0;if(d>bestRun){bestRun=d;store.set('run-best-any',d);}}
 let unlocked=store.get('spark-unlocked',0),done=store.get('spark-done',[]);
 
 /* ============ renderer ============ */
@@ -1020,7 +1022,7 @@ function bankCells(){bank+=player.cells;store.set('spark-bank',bank);coinsTotal+
 function maxLevel(){return done.length?Math.max(...done):-1;}
 function lvlName(i){i=Math.floor(+i);return i>=0&&i<LEVELS.length?ZONES[LEVELS[i].zone].name+' '+LEVELS[i].name:'–';}
 function complete(){
- state='complete';sfx.win();flash();bankCells();
+ state='complete';sfx.win();flash();bankCells();noteRun(player.s);
  if(!done.includes(levelIdx)){done.push(levelIdx);store.set('spark-done',done);}
  syncProfile();
  unlocked=Math.max(unlocked,Math.min(LEVELS.length-1,levelIdx+1));store.set('spark-unlocked',unlocked);
@@ -1042,7 +1044,7 @@ function showOver(){
   $('finalDist').textContent=d;$('finalUnit').textContent='m';$('finalMidLabel').firstChild.textContent='Sector reached';$('finalMid').textContent=ZONES[zoneIndexAt(player.s)].name;
   $('finalRightLabel').firstChild.textContent='Best';$('finalRight').textContent=bestInf+' m';$('recordBadge').classList.toggle('hidden',!rec);$('overBack').textContent='Menu';}
  $('lbNote').classList.add('hidden');
- if(mode==='infinite')submitRun(d);else syncProfile();
+ noteRun(d);if(mode==='infinite')submitRun(d);else syncProfile();
  show('over');setTimeout(()=>$('againBtn').focus({preventScroll:true}),50);
 }
 function toTitle(){mode='infinite';resetWorld();state='title';camBlend=0;refreshMeta();show('title');$('hud').classList.add('hidden');$('touch').classList.add('hidden');setHint('');}
@@ -1519,7 +1521,7 @@ function drawBoard(){
  g.save();g.shadowColor='rgba(255,120,40,.9)';g.shadowBlur=28;rrect(g,18,18,W-36,H-36,34);g.fillStyle='rgba(16,4,2,.86)';g.fill();g.restore();
  rrect(g,18,18,W-36,H-36,34);g.lineWidth=6;g.strokeStyle='#ff8a3a';g.stroke();
  g.fillStyle='#ffb070';g.font='800 62px '+F;g.textBaseline='alphabetic';g.textAlign='left';g.fillText('LEADERBOARD',64,110);
- g.fillStyle='#c9ab96';g.font='500 28px '+F;g.textAlign='right';g.fillText('Top 10 · Infinite',W-64,106);
+ g.fillStyle='#c9ab96';g.font='500 28px '+F;g.textAlign='right';g.fillText('Top 10 · Longest run',W-64,106);
  g.fillStyle='rgba(255,138,58,.5)';g.fillRect(64,132,W-128,3);
  const msg=t=>{g.fillStyle='#f3e9dc';g.font='500 34px '+F;g.textAlign='center';g.fillText(t,W/2,H/2+10);};
  if(lbOff){msg('Leaderboard offline right now');lbTex.needsUpdate=true;return;}
@@ -1544,7 +1546,7 @@ drawBoard();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(dr
 function myRef(){try{return DB.collection('scores').doc(UID);}catch(e){return null;}}
 let remoteCoins=0,remoteLvl=-1;
 function profileData(best){const c=Math.max(coinsTotal,remoteCoins),l=Math.max(maxLevel(),remoteLvl);return{name:myName,best:Math.floor(best),coins:Math.floor(c),lvl:l,at:Date.now()};}
-function syncProfile(){if(!DB||!UID||!myName||!canWrite)return;const t=Math.max(remoteBest,bestInf);writeScore(t).then(ok=>{if(ok)remoteBest=t;});}
+function syncProfile(){if(!DB||!UID||!myName||!canWrite)return;const t=Math.max(remoteBest,bestInf,bestRun);writeScore(t).then(ok=>{if(ok)remoteBest=t;});}
 async function writeScore(best){
  if(!DB||!UID||!myName||!canWrite)return false;const ref=myRef();if(!ref)return false;
  try{await ref.set(profileData(best));return true;}
@@ -1554,7 +1556,7 @@ async function submitRun(d){
  const note=$('lbNote');
  if(lbOff){return;}
  if(!myName){note.textContent='';note.append('Want this on the leaderboard? ');const b=document.createElement('button');b.className='linkbtn';b.textContent='Sign up';b.onclick=()=>openSignup('over');note.appendChild(b);note.classList.remove('hidden');return;}
- const target=Math.max(d,bestInf);
+ const target=Math.max(d,bestInf,bestRun);
  {const ok=await writeScore(Math.max(target,remoteBest));if(ok)remoteBest=Math.max(target,remoteBest);}
  setTimeout(()=>{const idx=lbDocs.findIndex(x=>x.id===UID);
   if(!canWrite)return;
